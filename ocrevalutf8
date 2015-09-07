@@ -1,18 +1,24 @@
 #!/bin/sh
 # Requires iconv, uni2asc and asc2uni (the latter two from the
-# isri-ocr-evaluation toolkit)
+# isri-ocr-evaluation toolkit or the ocr-evaluation-tools repository)
 
-usage="$0 toolname ground.txt ocr.txt"
+usage="$0 toolname [option1] [option2] [option...] ground.txt ocr.txt"
 
-test $# -ne 3 && echo "$usage" && exit 1
+test $# -lt 3 && echo "$usage" && exit 1
 
 tool="$1"
-ground="$2"
-ocr="$3"
+shift
+opts=''
+while test `echo $1 | cut -c 1` = '-'; do
+	opts="$opts $1"
+	shift
+done
+ground="$1"
+ocr="$2"
 
 t=`mktemp -d`
 
-for i in "$2" "$3"; do
+for i in "$ground" "$ocr"; do
 	if ! test -f "$i"; then
 		echo "Error: can't find $i" >&2
 		exit 1
@@ -22,6 +28,6 @@ done
 iconv -f utf8 -t utf16 < "$ground" | uni2asc > "$t/ground"
 iconv -f utf8 -t utf16 < "$ocr" | uni2asc > "$t/ocr"
 
-"$1" "$t/ground" "$t/ocr" | asc2uni | iconv -f UTF-16 -t UTF-8
+"$tool" $opts "$t/ground" "$t/ocr" | asc2uni | iconv -f UTF-16 -t UTF-8
 
 rm -r "$t"
