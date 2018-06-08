@@ -24,32 +24,33 @@ training="$2"
 
 # Copy training to temporary directory and point Tesseract to it
 t=`mktemp -d`
-export TESSDATA_PREFIX="$t"
-mkdir "$t/tessdata"
+tessdatadir="$t"
 lang=`basename "$training" | awk -F . '{print $1}'`
-cp "$training" "$t/tessdata/$lang.traineddata"
+# echo "$training"
+cp "$training" "$t/$lang.traineddata"
 # tesseract seems to complain without a eng.traineddata file available
-ln -s "$t/tessdata/$lang.traineddata" "$t/tessdata/eng.traineddata"
+ln -s "$t/$lang.traineddata" "$t/eng.traineddata"
 
 sum=0
 n=0
 for i in `find "$imgdir" -type f -name '*.png' | sort`; do
 	b=`basename "$i" .png`
-	printf "%s: " "$b"
-	err=`tesseract "$i" "$t/$b" -l $lang 2>&1`
+	name=$(echo "$i" | sed -e 's/\.[^.]*$//') 
+	# printf "%s: " "$b"
+	err=`tesseract "$i" "$t/$b" --tessdata-dir $tessdatadir --oem 1 --psm 6 -l $lang 2>&1`
 	test $? -ne 0 && continue
 
-	acc=`ocrevalutf8 $accprog "$imgdir/$b.txt" "$t/$b.txt" \
+	acc=`ocrevalutf8 $accprog "$name-gt.txt" "$t/$b.txt" \
 	     | awk '/Accuracy$/ {print $1; exit}' | sed 's/%//'`
 	n=`expr $n + 1`
 	sum=`echo $sum + $acc | bc -l`
 
-	printf "%.2f%%\n" "$acc"
+	# printf "%.2f%%\n" "$acc"
 done
 
 if test $n -ne 0; then
         avg=`echo $sum / $n | bc -l`
-        printf "average: %.2f%%\n" "$avg"
+        printf "$training - Average Accuracy: %.2f%%\n" "$avg"
 fi
 
 rm -rf "$t"
