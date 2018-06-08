@@ -25,9 +25,9 @@ for i in "$ground" "$ocr"; do
 	fi
 done
 
-iconv -f utf8 -t utf16 < "$ground" | uni2asc > "$t/ground"
-iconv -f utf8 -t utf16 < "$ocr" | uni2asc > "$t/ocr"
+iconv -c -f UTF-8 -t UTF-16 < "$ground" | uni2asc > "$t/ground"
+iconv -c -f UTF-8 -t UTF-16 < "$ocr" | uni2asc > "$t/ocr"
 
-"$tool" $opts "$t/ground" "$t/ocr" | asc2uni | iconv -f UTF-16 -t UTF-8
+"$tool" $opts "$t/ground" "$t/ocr" | asc2uni | iconv -c -f UTF-16 -t UTF-8
 
 rm -r "$t"
