@@ -15,6 +15,7 @@ while test `echo $1 | cut -c 1` = '-'; do
 done
 ground="$1"
 ocr="$2"
+# echo "What is the value of $opts"
 
 t=`mktemp -d`
 
@@ -25,9 +26,9 @@ for i in "$ground" "$ocr"; do
 	fi
 done
 
-iconv -c -f UTF-8 -t UTF-16 < "$ground" | uni2asc > "$t/ground"
-iconv -c -f UTF-8 -t UTF-16 < "$ocr" | uni2asc > "$t/ocr"
+iconv  -f UTF-8 -t UTF-16 < "$ground" | uni2asc > "$t/ground"
+iconv  -f UTF-8 -t UTF-16 < "$ocr" | uni2asc > "$t/ocr"
 
-"$tool" $opts "$t/ground" "$t/ocr" | asc2uni | iconv -c -f UTF-16 -t UTF-8
+"$tool" $opts "$t/ground" "$t/ocr" | asc2uni | iconv  -f UTF-16 -t UTF-8
 
 rm -r "$t"
