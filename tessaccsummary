@@ -36,7 +36,7 @@ n=0
 for i in `find "$imgdir" -type f -name '*.png' | sort`; do
 	b=`basename "$i" .png`
 	name=$(echo "$i" | sed -e 's/\.[^.]*$//') 
-	# printf "%s: " "$b"
+	printf "%s: " "$b"
 	err=`tesseract "$i" "$t/$b" --tessdata-dir $tessdatadir --oem 1 --psm 6 -l $lang 2>&1`
 	test $? -ne 0 && continue
 
