@@ -44,7 +44,7 @@ SRC = \
 	wordaccsum/wordaccsum.c \
 	wordfreq/wordfreq.c
 
-EXTRAS = ocrevalutf8 tessaccsummary
+EXTRAS = ocrevalutf8 tessaccsummary modelsummary
 
 HDR = $(LIB:.o=.h)
 OBJ = $(SRC:.c=.o) $(LIB)

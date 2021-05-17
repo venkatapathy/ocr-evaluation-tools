@@ -1,0 +1,80 @@
+#!/bin/sh
+# Copyright 2013 Nick White <nick.white@durham.ac.uk>
+# Modified from Nick White's Program for OCR Evaluation Tools
+# Permission to use, copy, modify, and/or distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+
+usage="$0 imgdir traineddata language destdir reportname [psm]
+
+ imgdir       full path to the directory containing .jpeg images with accompanying
+               .txt ground truth files
+  traineddata  full path to dir where .traineddata is present
+  language	.traineddata file name of the Model to be used
+  destdir	where all the results need to be moved
+  reportname	name of the final report
+  psm		Optional. Page Segmentation Mode. Default is 3. Useful options: 1,3,4,6,11"
+
+test $# -ne 5 && echo "Usage: $usage" && exit 1
+
+acccharprog=accuracy
+acccharsumprog=accsum
+accwordprog=wordacc
+accwordsumprog=wordaccsum
+imgdir="$1"
+training="$2"
+destdir="$4"
+psm="${6:-3}"
+#tessdatadir="/home/server/Documents/ocr/tesseract-exec/share/tessdata"
+tessdatadir=$training
+lang=$3
+
+#create dir report
+#mkdir -p $desdir/reports
+
+#printf "%s" "$tessdatadir"
+#printf "%s" "$imgdir"
+
+rm -r $destdir
+mkdir -p $destdir/char-reports
+mkdir -p $destdir/word-reports
+
+
+for i in `find "$imgdir" -type f -name '*.jpeg' | sort`; do
+	b=`basename "$i" .jpeg`
+	
+	#printf "Only Name> %s" "$onlyname"
+	name=$(echo "$i" | sed -e 's/\.[^.]*$//') 
+	printf "OCRING %s\n" "$b"
+	#printf "%s.sample " "$b"
+	tesseract "$i" "$destdir/$b.pred" --tessdata-dir $tessdatadir --oem 1 --psm $psm -l $lang 2>&1
+	printf "Finding Accuracy.\n"
+	acc=`ocrevalutf8 $acccharprog "$imgdir/$b.gt.txt" "$destdir/$b.pred.txt" \
+		     > $destdir/$b-char-report.txt`
+	acc=`ocrevalutf8 $accwordprog "$imgdir/$b.gt.txt" "$destdir/$b.pred.txt" \
+		     > $destdir/$b-word-report.txt`
+	printf "%s\t%s\n" "$b" "`grep 'Deva' $destdir/$b-char-report.txt |rev | cut -c 1-19 | rev`"  >> $destdir/$5.charlist.csv
+	# printf "%.2f%%\n" "$acc"
+done
+
+
+#convert all generated report files to utf 16
+for i in `find "$destdir" -maxdepth 1 -type f -name '*char-report.txt' | sort`; do
+	iconv  -f UTF-8 -t UTF-16 < "$i" | uni2asc > "$destdir/char-reports/`basename $i`"
+done
+
+#call acccharsum on converted reports
+$acccharsumprog `run-parts --list --regex 'report.txt' "$destdir/char-reports"`  > "$destdir/char-reports/totalreports.txt"
+cat "$destdir/char-reports/totalreports.txt" | asc2uni | iconv  -f UTF-16 -t UTF-8 >"$destdir/totalreports_char_final.txt"
+
+#convert all generated report files to utf 16
+for i in `find "$destdir" -maxdepth 1 -type f -name '*word-report.txt' | sort`; do
+	iconv  -f UTF-8 -t UTF-16 < "$i" | uni2asc > "$destdir/word-reports/`basename $i`"
+done
+
+#call accwordsum on converted reports
+$accwordsumprog `run-parts --list --regex 'report.txt' "$destdir/word-reports"`  > "$destdir/word-reports/totalreports.txt"
+cat "$destdir/word-reports/totalreports.txt" | asc2uni | iconv  -f UTF-16 -t UTF-8 >"$destdir/totalreports_word_final.txt"
+
+mv $destdir/totalreports_char_final.txt $destdir/$5.char.txt
+mv $destdir/totalreports_word_final.txt $destdir/$5.word.txt
